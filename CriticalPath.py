@@ -71,28 +71,32 @@ def write_parsed_data_to_excel(data):
                "spare time": node.spare_time, "is critical": node.is_critical}
         df = df.append(row, ignore_index=True)
 
+    critical_path = determine_critical_path()
+    df = df.append(
+        {"name": "Critical Path:", "start time": " -> ".join([n.name for n in critical_path])},
+        ignore_index=True)
     #print(df)
 
     # Save the calculated data to the excel file
-    with pd.ExcelWriter(EXCEL_OUTPUT_DATA) as writer:
-        df.to_excel(writer)
-
+    try:
+        with pd.ExcelWriter(EXCEL_OUTPUT_DATA) as writer:
+            df.to_excel(writer)
+    except PermissionError:
+        print("Couldn't save data because you had output excel file open.\n"
+              "Close the file and re-run the program.")
+    else:
+        print(f"Data successfully calculated and saved in the file: {EXCEL_OUTPUT_DATA}")
 
 def main():
     global parsed_data
 
     df = open_data_file()
     parse_data(df)
-    critical_path = determine_critical_path()
     determine_free_time()
-
-    print(", ".join([n.name for n in critical_path]))
     write_parsed_data_to_excel(parsed_data)
     #for name, node in parsed_data.items():
     #    print(f'{name}: | start time: {node.start_time} | end time: {node.get_end_time()}'
     #          f' | spare time: {node.spare_time} | is critical: {node.is_critical}')
-
-
 
 if __name__ == '__main__':
     main()
