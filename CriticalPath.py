@@ -64,6 +64,19 @@ def determine_free_time():
     for name, node in parsed_data.items():
         node.calculate_spare_time()
 
+def write_parsed_data_to_excel(data):
+    df = pd.DataFrame(columns=["name", "start time", "end time", "spare time", "is critical"])
+    for name, node in data.items():
+        row = {"name": name, "start time": node.start_time, "end time": node.get_end_time(),
+               "spare time": node.spare_time, "is critical": node.is_critical}
+        df = df.append(row, ignore_index=True)
+
+    #print(df)
+
+    # Save the calculated data to the excel file
+    with pd.ExcelWriter(EXCEL_OUTPUT_DATA) as writer:
+        df.to_excel(writer)
+
 
 def main():
     global parsed_data
@@ -74,9 +87,11 @@ def main():
     determine_free_time()
 
     print(", ".join([n.name for n in critical_path]))
-    for name, node in parsed_data.items():
-        print(f'{name}: | start time: {node.start_time} | end time: {node.get_end_time()}'
-              f' | spare time: {node.spare_time} | is critical: {node.is_critical}')
+    write_parsed_data_to_excel(parsed_data)
+    #for name, node in parsed_data.items():
+    #    print(f'{name}: | start time: {node.start_time} | end time: {node.get_end_time()}'
+    #          f' | spare time: {node.spare_time} | is critical: {node.is_critical}')
+
 
 
 if __name__ == '__main__':
