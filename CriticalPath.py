@@ -1,51 +1,102 @@
-import pandas as pd
-from node import Node
+#from pandas import (read_excel, DataFrame, ExcelWriter, to_excel)
+import csv
+from os import path
 
 # Note modules openpyxl and xlrd are necessary for reading / writing to excel files
 
-EXCEL_INPUT_DATA = 'data.xlsx'
-EXCEL_OUTPUT_DATA = 'output.xlsx'
+class Node:
 
-def open_data_file():
-    data_frame = pd.read_excel(io=EXCEL_INPUT_DATA,
-                               dtype={'name': str, 'time': float, 'dependencies': str})
-    return data_frame
+    def __init__(self, name, time, critical_parent):
+        self.name = name
+        self.time = time
+        self.critical_parent = critical_parent
+        self.critical_child = None
+        self.start_time = critical_parent.get_end_time() if critical_parent is not None else 0
+        self.is_critical = False
+        self.spare_time = 0
 
+    def get_end_time(self):
+        return self.start_time + self.time
+
+    def get_critical_parent(self):
+        return self.critical_parent
+
+    def set_is_critical(self):
+        self.is_critical = True
+
+    def set_critical_child(self, child):
+        if self.critical_child is None or self.critical_child.start_time > child.start_time:
+            self.critical_child = child
+
+    def calculate_spare_time(self, total_time):
+        child_start_time = self.critical_child.start_time if self.critical_child is not None else total_time
+
+        self.spare_time = child_start_time - self.get_end_time()
+
+
+INPUT_DATA = 'data.csv'
+OUTPUT_DATA = 'output.csv'
 
 def parse_dependencies(dependencies):
-    if type(dependencies) is float:
+    if dependencies == '':
         return []
     return dependencies.split(',')
 
-def parse_data(data_frame):
+def parse_data():
     global parsed_data
     global final_node
     parsed_data = {}
     final_node = None
 
-    for index, series in data_frame.iterrows():
-        name = series.get("name")
-        time = series.get("time")
+    if not path.isfile(INPUT_DATA):
+        #Create the file if it doesn't exist.
+        columns = ['name', 'time', 'dependencies']
+        with open(INPUT_DATA, 'w') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=columns)
+            writer.writeheader()
+            csvfile.close()
+        print(f'The file {INPUT_DATA} did not exist and so has been created.')
+        input('Press enter to close the console.')
 
-        parsed_dependencies = parse_dependencies(series.get("dependencies"))
-        dependencies = [parsed_data[d] for d in parsed_dependencies]
+    try:
+        with open(INPUT_DATA, 'r') as csvfile:
+            data = csv.DictReader(csvfile)
+            for row in data:
+                try:
+                    name = row["name"]
 
-        critical_node = None
+                    try:
+                        time = float(row["time"])
+                    except ValueError:
+                        print(f'{row["time"]} should be a number.')
 
-        if len(dependencies) != 0:
-            critical_node = max(dependencies, key=lambda node: node.get_end_time())
+                    parsed_dependencies = parse_dependencies(row["dependencies"])
+                    dependencies = [parsed_data[d] for d in parsed_dependencies]
 
-        node = Node(name, time, critical_node)
-        for n in dependencies:
-            # If the start time is sooner than node n's current critical child, then it
-            # updates it to this node.
-            n.set_critical_child(node)
+                    critical_node = None
 
-        if final_node is None or final_node.get_end_time() < node.get_end_time():
-            final_node = node
+                    if len(dependencies) != 0:
+                        critical_node = max(dependencies, key=lambda node: node.get_end_time())
 
-        parsed_data[name] = node
+                    node = Node(name, time, critical_node)
+                    for n in dependencies:
+                        # If the start time is sooner than node n's current critical child, then it
+                        # updates it to this node.
+                        n.set_critical_child(node)
 
+                    if final_node is None or final_node.get_end_time() < node.get_end_time():
+                        final_node = node
+
+                    parsed_data[name] = node
+                except KeyError:
+                    print(f"There was an error parsing {INPUT_DATA}. Make sure you have all the columns"
+                          f" correctly named (name, time, dependencies) and check that {INPUT_DATA}'s formatting"
+                          f"hasn't been corrupted. In that case, simple re-enter the data and check it's saved "
+                          f"after closing it.")
+                    break
+    except FileNotFoundError:
+        print(f"The file, {INPUT_DATA} doesn't exist, please create it and re-run the program.")
+        input('Press enter to close the console.')
 
 def determine_critical_path():
     global final_node
@@ -70,36 +121,37 @@ def determine_free_time():
 
 def write_parsed_data_to_excel(data):
     global final_node
-
-    df = pd.DataFrame(columns=["name", "start time", "time taken", "end time", "spare time", "is critical"])
-    critical_path = determine_critical_path()
-
-    for name, node in data.items():
-        row = {"name": name, "start time": node.start_time, "time taken": node.time, "end time": node.get_end_time(),
-               "spare time": node.spare_time, "is critical": node.is_critical}
-        df = df.append(row, ignore_index=True)
-
-    df = df.append(
-        {"name": "Critical Path:", "start time": " -> ".join([n.name for n in critical_path]),
-         "spare time": "Total Time:", "is critical": final_node.get_end_time()},
-        ignore_index=True)
-    #print(df)
-
-    # Save the calculated data to the excel file
-    try:
-        with pd.ExcelWriter(EXCEL_OUTPUT_DATA) as writer:
-            df.to_excel(writer)
-    except PermissionError:
-        print("Couldn't save data because you had output excel file open.\n"
-              "Close the file and re-run the program.")
+    if len(data.items()) == 0:
+        print(f'{INPUT_DATA} is empty. Add data to it for the program to run.')
     else:
-        print(f"Data successfully calculated and saved in the file: {EXCEL_OUTPUT_DATA}")
+        try:
+            with open(OUTPUT_DATA, 'w') as csvfile:
+                columns = ["name", "start time", "time taken", "end time", "spare time", "is critical"]
+                writer = csv.DictWriter(csvfile, fieldnames=columns)
+
+                writer.writeheader()
+                critical_path = determine_critical_path()
+
+                for name, node in data.items():
+                    row = {"name": name, "start time": node.start_time, "time taken": node.time,
+                           "end time": node.get_end_time(), "spare time": node.spare_time, "is critical": node.is_critical}
+                    writer.writerow(row)
+                writer.writerow({"name": "Critical Path:", "start time": " -> ".join([n.name for n in critical_path]),
+                                "spare time": "Total Time:", "is critical": final_node.get_end_time()})
+        except PermissionError:
+            print("Couldn't save data because you had output excel file open.\n"
+                  "Close the file and re-run the program.")
+        else:
+            print(f"Data successfully calculated and saved in the file: {OUTPUT_DATA}.  ")
+
+    input("Press enter to close the console.")
 
 def main():
     global parsed_data
 
-    df = open_data_file()
-    parse_data(df)
+    print("Program started :)")
+
+    parse_data()
     determine_free_time()
     write_parsed_data_to_excel(parsed_data)
     #for name, node in parsed_data.items():
