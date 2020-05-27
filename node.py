@@ -19,10 +19,10 @@ class Node:
         self.is_critical = True
 
     def set_critical_child(self, child):
-        if self.critical_child is None or self.critical_child.start_time < child.start_time:
+        if self.critical_child is None or self.critical_child.start_time > child.start_time:
             self.critical_child = child
 
-    def calculate_spare_time(self):
-        child_start_time = self.critical_child.start_time if self.critical_child is not None else self.get_end_time()
+    def calculate_spare_time(self, total_time):
+        child_start_time = self.critical_child.start_time if self.critical_child is not None else total_time
 
         self.spare_time = child_start_time - self.get_end_time()

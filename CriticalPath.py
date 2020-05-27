@@ -1,6 +1,8 @@
 import pandas as pd
 from node import Node
 
+# Note modules openpyxl and xlrd are necessary for reading / writing to excel files
+
 EXCEL_INPUT_DATA = 'data.xlsx'
 EXCEL_OUTPUT_DATA = 'output.xlsx'
 
@@ -60,20 +62,26 @@ def determine_critical_path():
 
 def determine_free_time():
     global parsed_data
+    global final_node
 
     for name, node in parsed_data.items():
-        node.calculate_spare_time()
+        node.calculate_spare_time(final_node.get_end_time())
+
 
 def write_parsed_data_to_excel(data):
-    df = pd.DataFrame(columns=["name", "start time", "end time", "spare time", "is critical"])
+    global final_node
+
+    df = pd.DataFrame(columns=["name", "start time", "time taken", "end time", "spare time", "is critical"])
+    critical_path = determine_critical_path()
+
     for name, node in data.items():
-        row = {"name": name, "start time": node.start_time, "end time": node.get_end_time(),
+        row = {"name": name, "start time": node.start_time, "time taken": node.time, "end time": node.get_end_time(),
                "spare time": node.spare_time, "is critical": node.is_critical}
         df = df.append(row, ignore_index=True)
 
-    critical_path = determine_critical_path()
     df = df.append(
-        {"name": "Critical Path:", "start time": " -> ".join([n.name for n in critical_path])},
+        {"name": "Critical Path:", "start time": " -> ".join([n.name for n in critical_path]),
+         "spare time": "Total Time:", "is critical": final_node.get_end_time()},
         ignore_index=True)
     #print(df)
 
