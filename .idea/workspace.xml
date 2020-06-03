@@ -2,41 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="562797ed-0db7-449f-be63-8e0275133507" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/dictionaries/pumbas600.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dictionaries/pumbas600.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/CriticalPath.py" beforeDir="false" afterPath="$PROJECT_DIR$/CriticalPath.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data.xlsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/environment/Lib/site-packages/easy-install.pth" beforeDir="false" afterPath="$PROJECT_DIR$/environment/Lib/site-packages/easy-install.pth" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/environment/Lib/site-packages/jdcal-1.4.1.dist-info/RECORD" beforeDir="false" afterPath="$PROJECT_DIR$/environment/Lib/site-packages/jdcal-1.4.1.dist-info/RECORD" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/environment/Lib/site-packages/numpy-1.18.4.dist-info/RECORD" beforeDir="false" afterPath="$PROJECT_DIR$/environment/Lib/site-packages/numpy-1.18.4.dist-info/RECORD" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/environment/Lib/site-packages/numpy-1.18.4.dist-info/WHEEL" beforeDir="false" afterPath="$PROJECT_DIR$/environment/Lib/site-packages/numpy-1.18.4.dist-info/WHEEL" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/environment/Lib/site-packages/numpy/core/include/numpy/_numpyconfig.h" beforeDir="false" afterPath="$PROJECT_DIR$/environment/Lib/site-packages/numpy/core/include/numpy/_numpyconfig.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/environment/Lib/site-packages/numpy/core/lib/npymath.lib" beforeDir="false" afterPath="$PROJECT_DIR$/environment/Lib/site-packages/numpy/core/lib/npymath.lib" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/environment/Lib/site-packages/pandas-1.0.3.dist-info/RECORD" beforeDir="false" afterPath="$PROJECT_DIR$/environment/Lib/site-packages/pandas-1.0.3.dist-info/RECORD" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/environment/Lib/site-packages/pandas-1.0.3.dist-info/WHEEL" beforeDir="false" afterPath="$PROJECT_DIR$/environment/Lib/site-packages/pandas-1.0.3.dist-info/WHEEL" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/environment/Lib/site-packages/python_dateutil-2.8.1.dist-info/RECORD" beforeDir="false" afterPath="$PROJECT_DIR$/environment/Lib/site-packages/python_dateutil-2.8.1.dist-info/RECORD" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/environment/Lib/site-packages/pytz-2020.1.dist-info/RECORD" beforeDir="false" afterPath="$PROJECT_DIR$/environment/Lib/site-packages/pytz-2020.1.dist-info/RECORD" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/environment/Lib/site-packages/setuptools.pth" beforeDir="false" afterPath="$PROJECT_DIR$/environment/Lib/site-packages/setuptools.pth" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/environment/Lib/site-packages/six-1.15.0.dist-info/RECORD" beforeDir="false" afterPath="$PROJECT_DIR$/environment/Lib/site-packages/six-1.15.0.dist-info/RECORD" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/environment/Lib/site-packages/xlrd-1.2.0.dist-info/RECORD" beforeDir="false" afterPath="$PROJECT_DIR$/environment/Lib/site-packages/xlrd-1.2.0.dist-info/RECORD" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/environment/Scripts/Activate.ps1" beforeDir="false" afterPath="$PROJECT_DIR$/environment/Scripts/Activate.ps1" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/environment/Scripts/activate" beforeDir="false" afterPath="$PROJECT_DIR$/environment/Scripts/activate" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/environment/Scripts/activate.bat" beforeDir="false" afterPath="$PROJECT_DIR$/environment/Scripts/activate.bat" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/environment/Scripts/easy_install-script.py" beforeDir="false" afterPath="$PROJECT_DIR$/environment/Scripts/easy_install-script.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/environment/Scripts/easy_install.exe" beforeDir="false" afterPath="$PROJECT_DIR$/environment/Scripts/easy_install.exe" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/environment/Scripts/f2py.exe" beforeDir="false" afterPath="$PROJECT_DIR$/environment/Scripts/f2py.exe" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/environment/Scripts/pip-script.py" beforeDir="false" afterPath="$PROJECT_DIR$/environment/Scripts/pip-script.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/environment/Scripts/pip.exe" beforeDir="false" afterPath="$PROJECT_DIR$/environment/Scripts/pip.exe" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/environment/Scripts/pip3-script.py" beforeDir="false" afterPath="$PROJECT_DIR$/environment/Scripts/pip3-script.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/environment/Scripts/pip3.exe" beforeDir="false" afterPath="$PROJECT_DIR$/environment/Scripts/pip3.exe" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/environment/Scripts/python.exe" beforeDir="false" afterPath="$PROJECT_DIR$/environment/Scripts/python.exe" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/environment/Scripts/pythonw.exe" beforeDir="false" afterPath="$PROJECT_DIR$/environment/Scripts/pythonw.exe" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/environment/Scripts/runxlrd.py" beforeDir="false" afterPath="$PROJECT_DIR$/environment/Scripts/runxlrd.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/environment/pyvenv.cfg" beforeDir="false" afterPath="$PROJECT_DIR$/environment/pyvenv.cfg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/node.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/output.xlsx" beforeDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />

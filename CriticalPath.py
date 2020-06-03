@@ -1,8 +1,5 @@
-#from pandas import (read_excel, DataFrame, ExcelWriter, to_excel)
 import csv
 from os import path
-
-# Note modules openpyxl and xlrd are necessary for reading / writing to excel files
 
 class Node:
 
@@ -33,6 +30,43 @@ class Node:
 
         self.spare_time = child_start_time - self.get_end_time()
 
+class Supervisor:
+
+    def __init__(self, time_range):
+        self.working_times = [time_range]
+
+    def add_work_time(self, time_range):
+        self.working_times.append(time_range)
+        self.sort_time_range_down()
+
+    def sort_time_range_down(self):
+        current_index = len(self.working_times) - 1
+        while current_index > 0 and\
+                self.working_times[current_index] < self.working_times[current_index - 1]:
+            self.swap(current_index, current_index - 1)
+            current_index -= 1
+
+    def swap(self, a: int, b: int):
+        self.working_times[a], self.working_times[b]\
+            = self.working_times[b], self.working_times[a]
+
+    def is_free_during(self, time_range):
+        #Use some form of binary search because times are sorted from lowest to highest
+        pass
+
+
+class TimeRange:
+
+    def __init__(self, start, end):
+        self.start = start
+        self.end = end
+
+    def __lt__(self, other):
+        if isinstance(other, TimeRange):
+            return self.end < other.start
+        else:
+            return False
+
 
 INPUT_DATA = 'data.csv'
 OUTPUT_DATA = 'output.csv'
@@ -40,7 +74,7 @@ OUTPUT_DATA = 'output.csv'
 def parse_dependencies(dependencies):
     if dependencies == '':
         return []
-    return dependencies.split(',')
+    return dependencies.split(',').trim().upper()
 
 def parse_data():
     global parsed_data
@@ -63,7 +97,7 @@ def parse_data():
             data = csv.DictReader(csvfile)
             for row in data:
                 try:
-                    name = row["name"]
+                    name = row["name"].upper()
 
                     try:
                         time = float(row["time"])
@@ -119,7 +153,7 @@ def determine_free_time():
         node.calculate_spare_time(final_node.get_end_time())
 
 
-def write_parsed_data_to_excel(data):
+def write_parsed_data_to_csv(data):
     global final_node
     if len(data.items()) == 0:
         print(f'{INPUT_DATA} is empty. Add data to it for the program to run.')
@@ -139,7 +173,7 @@ def write_parsed_data_to_excel(data):
                 writer.writerow({"name": "Critical Path:", "start time": " -> ".join([n.name for n in critical_path]),
                                 "spare time": "Total Time:", "is critical": final_node.get_end_time()})
         except PermissionError:
-            print("Couldn't save data because you had output excel file open.\n"
+            print(f"Couldn't save data because you had {OUTPUT_DATA} open.\n"
                   "Close the file and re-run the program.")
         else:
             print(f"Data successfully calculated and saved in the file: {OUTPUT_DATA}.  ")
@@ -153,7 +187,7 @@ def main():
 
     parse_data()
     determine_free_time()
-    write_parsed_data_to_excel(parsed_data)
+    write_parsed_data_to_csv(parsed_data)
     #for name, node in parsed_data.items():
     #    print(f'{name}: | start time: {node.start_time} | end time: {node.get_end_time()}'
     #          f' | spare time: {node.spare_time} | is critical: {node.is_critical}')
