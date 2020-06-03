@@ -54,6 +54,11 @@ class Supervisor:
         #Use some form of binary search because times are sorted from lowest to highest
         pass
 
+    def binary_search(self, min, max):
+        index = (max + min) / 2
+
+        pass
+
 
 class TimeRange:
 
@@ -64,6 +69,18 @@ class TimeRange:
     def __lt__(self, other):
         if isinstance(other, TimeRange):
             return self.end < other.start
+        else:
+            return False
+
+    def __gt__(self, other):
+        if isintance(other, TimeRange):
+            return self.start > other.end
+        else:
+            return False
+
+    def __eq__(self, other):
+        if isinstance(other, TimeRange):
+            return other.start < self.end < other.end or other.start < self.start < other.end
         else:
             return False
 
