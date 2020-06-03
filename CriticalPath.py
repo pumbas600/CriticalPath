@@ -1,6 +1,7 @@
 import csv
 from os import path
 
+
 class Node:
 
     def __init__(self, name, time, critical_parent):
@@ -30,6 +31,7 @@ class Node:
 
         self.spare_time = child_start_time - self.get_end_time()
 
+
 class Supervisor:
 
     def __init__(self, time_range):
@@ -51,13 +53,11 @@ class Supervisor:
             = self.working_times[b], self.working_times[a]
 
     def is_free_during(self, time_range):
-        #Use some form of binary search because times are sorted from lowest to highest
-        pass
-
-    def binary_search(self, min, max):
-        index = (max + min) / 2
-
-        pass
+        # Linear search FTW...
+        for working_time in self.working_times:
+            if working_time == time_range:
+                return False
+        return True
 
 
 class TimeRange:
@@ -162,6 +162,29 @@ def determine_critical_path():
     return critical_path[::-1]
 
 
+def determine_supervisors():
+    global parse_data
+    supervisors = []
+
+    for name, node in parse_data.items():
+        time_range = TimeRange(node.start_time, node.get_end_time())
+        free_supervisor = determine_free_supervisor(supervisors, time_range)
+
+        if free_supervisor is None:
+            supervisors.append(Supervisor(time_range))
+        else:
+            free_supervisor.add_work_time(time_range)
+
+    return supervisors
+
+
+def determine_free_supervisor(supervisors, time_range):
+    for supervisor in supervisors:
+        if supervisor.is_free_during(time_range):
+            return supervisor
+    return None
+
+
 def determine_free_time():
     global parsed_data
     global final_node
@@ -204,6 +227,8 @@ def main():
 
     parse_data()
     determine_free_time()
+    supervisors = determine_supervisors()
+    print(f'Number of supervisors required is: {len(supervisors)}')
     write_parsed_data_to_csv(parsed_data)
     #for name, node in parsed_data.items():
     #    print(f'{name}: | start time: {node.start_time} | end time: {node.get_end_time()}'
