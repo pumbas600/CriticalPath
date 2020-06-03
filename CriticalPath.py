@@ -74,7 +74,7 @@ OUTPUT_DATA = 'output.csv'
 def parse_dependencies(dependencies):
     if dependencies == '':
         return []
-    return dependencies.split(',').trim().upper()
+    return dependencies.split(',').strip().upper()
 
 def parse_data():
     global parsed_data
