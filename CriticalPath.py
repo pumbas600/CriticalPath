@@ -1,5 +1,6 @@
 import csv
 from os import path
+import tkinter as tk
 
 
 class Node:
@@ -160,10 +161,10 @@ def determine_critical_path():
 
 
 def determine_supervisors():
-    global parsed_data
+    data = get_parsed_data()
     supervisors = []
 
-    for name, node in parsed_data.items():
+    for name, node in data.items():
         time_range = TimeRange(node.start_time, node.get_end_time(), name)
         free_supervisor = determine_free_supervisor(supervisors, time_range)
 
@@ -183,10 +184,10 @@ def determine_free_supervisor(supervisors, time_range):
 
 
 def determine_free_time():
-    global parsed_data
     global final_node
+    data = get_parsed_data()
 
-    for name, node in parsed_data.items():
+    for name, node in data.items():
         node.calculate_spare_time(final_node.get_end_time())
 
 
@@ -215,6 +216,50 @@ def write_parsed_data_to_csv(data):
         else:
             print(f"Data successfully calculated and saved in the file: {OUTPUT_DATA}.  ")
 
+def get_parsed_data():
+    global parsed_data
+    if parsed_data is None:
+        parsed_data = {}
+    return parsed_data
+
+def build_app():
+    data = get_parsed_data()
+
+    root = tk.Tk()
+
+    def create_header(text, **kwargs):
+        header = create_label(text, **kwargs)
+        #Add formatting to header
+        return header
+
+    def create_label(text, **kwargs):
+        return tk.Label(root, text=str(text), **kwargs)
+
+    def add_to_grid(widget, row, column, **kwargs):
+        widget.grid(row=row, column=column, sticky="ew", pady=5, padx=5, **kwargs)
+
+    def create_row(node, row):
+        add_to_grid(create_label(node.name), row, 0)
+        add_to_grid(create_label(node.start_time), row, 1)
+        add_to_grid(create_label(node.time), row, 2)
+        add_to_grid(create_label(node.get_end_time()), row, 3)
+        add_to_grid(create_label(node.spare_time), row, 4)
+
+    row = 0
+    add_to_grid(create_header('Task'), row, 0)
+    add_to_grid(create_header('Start Time'), row, 1)
+    add_to_grid(create_header('Time Taken'), row, 2)
+    add_to_grid(create_header('End Time'), row, 3)
+    add_to_grid(create_header('Spare Time'), row, 4)
+
+    row += 1
+
+    for name, node in data.items():
+        create_row(node, row)
+        row += 1
+
+    root.mainloop()
+
 def main():
     global parsed_data
 
@@ -224,6 +269,7 @@ def main():
     determine_free_time()
     supervisors = determine_supervisors()
     print(f'Number of supervisors required is: {len(supervisors)}')
+    build_app()
     write_parsed_data_to_csv(parsed_data)
     #for name, node in parsed_data.items():
     #    print(f'{name}: | start time: {node.start_time} | end time: {node.get_end_time()}'
