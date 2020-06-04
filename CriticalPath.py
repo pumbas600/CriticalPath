@@ -62,27 +62,24 @@ class Supervisor:
 
 class TimeRange:
 
-    def __init__(self, start, end):
+    def __init__(self, start, end, name):
         self.start = start
         self.end = end
+        self.name = name
 
     def __lt__(self, other):
-        if isinstance(other, TimeRange):
-            return self.end < other.start
-        else:
-            return False
+        return isinstance(other, TimeRange) and self.end < other.start
 
     def __gt__(self, other):
-        if isintance(other, TimeRange):
-            return self.start > other.end
-        else:
-            return False
+        return isinstance(other, TimeRange) and self.start > other.end
 
     def __eq__(self, other):
-        if isinstance(other, TimeRange):
-            return other.start < self.end < other.end or other.start < self.start < other.end
-        else:
-            return False
+        return isinstance(other, TimeRange) and (other.start < self.end < other.end or
+                                                 other.start < self.start < other.end or
+                                                 (other.start >= self.start and other.end <= self.end))
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 
 INPUT_DATA = 'data.csv'
@@ -91,7 +88,7 @@ OUTPUT_DATA = 'output.csv'
 def parse_dependencies(dependencies):
     if dependencies == '':
         return []
-    return dependencies.split(',').strip().upper()
+    return [d.strip().upper() for d in dependencies.split(',')]
 
 def parse_data():
     global parsed_data
@@ -163,11 +160,11 @@ def determine_critical_path():
 
 
 def determine_supervisors():
-    global parse_data
+    global parsed_data
     supervisors = []
 
-    for name, node in parse_data.items():
-        time_range = TimeRange(node.start_time, node.get_end_time())
+    for name, node in parsed_data.items():
+        time_range = TimeRange(node.start_time, node.get_end_time(), name)
         free_supervisor = determine_free_supervisor(supervisors, time_range)
 
         if free_supervisor is None:
@@ -218,8 +215,6 @@ def write_parsed_data_to_csv(data):
         else:
             print(f"Data successfully calculated and saved in the file: {OUTPUT_DATA}.  ")
 
-    input("Press enter to close the console.")
-
 def main():
     global parsed_data
 
@@ -233,6 +228,18 @@ def main():
     #for name, node in parsed_data.items():
     #    print(f'{name}: | start time: {node.start_time} | end time: {node.get_end_time()}'
     #          f' | spare time: {node.spare_time} | is critical: {node.is_critical}')
+    for supervisor in supervisors:
+        output = ""
+        last_time = 0
+        for working_time in supervisor.working_times:
+            not_working_time = working_time.start - last_time
+            last_time = working_time.end
+            output += " " * int(not_working_time)
+            output += working_time.name * int(working_time.end - working_time.start)
+        print(output)
+
+    input("Press enter to close the console.")
+
 
 if __name__ == '__main__':
     main()
