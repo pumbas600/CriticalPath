@@ -64,6 +64,9 @@ class Supervisor:
                 return False
         return True
 
+    def just_finished_at(self, time):
+        finish_time = self.working_times[len(self.working_times) - 1].end if len(self.working_times) != 0 else 0
+        return finish_time == time
 
 class TimeRange:
 
@@ -102,6 +105,7 @@ INPUT_DATA = 'data.csv'
 OUTPUT_DATA = 'output.csv'
 
 pale_blue = '#c4d9ed'
+darker_pale_blue = '#aaceef'
 
 def parse_dependencies(dependencies):
     if dependencies == '':
@@ -216,10 +220,15 @@ def determine_supervisors():
     return supervisors
 
 def determine_free_supervisor(supervisors, time_range):
+    free_supervisor = None
     for supervisor in supervisors:
-        if supervisor.is_free_during(time_range):
+        #Prioritise supervisors that have just finished
+        if supervisor.just_finished_at(time_range.start):
             return supervisor
-    return None
+
+        elif free_supervisor is None and supervisor.is_free_during(time_range):
+            free_supervisor = supervisor
+    return free_supervisor
 
 def determine_free_time():
     _final_node = get_final_node()
@@ -346,7 +355,9 @@ def build_app():
             row_index = 1.5
             for supervisor in supervisors:
                 prev_time = None
-                for working_time in supervisor.working_times:
+                for i in range(len(supervisor.working_times)):
+                    working_time = supervisor.working_times[i]
+                    fill = pale_blue if i % 2 == 0 else darker_pale_blue
 
                     #Prevents double ups occuring when a task finishes and another starts at the same time
                     if prev_time is None or prev_time.end != working_time.start:
@@ -357,7 +368,7 @@ def build_app():
                     #Create line representing task time.
                     canvas.create_line((working_time.start * unit) + xpad, row_index * vgap,
                                        (working_time.end * unit) + xpad, row_index * vgap,
-                                       width=line_width, fill=pale_blue)
+                                       width=line_width, fill=fill)
 
                     #Display end time
                     canvas.create_text((working_time.end * unit) + xpad, (row_index + 0.3) * vgap,
