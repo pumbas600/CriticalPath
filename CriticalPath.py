@@ -3,8 +3,11 @@ import csv
 from os import path as ospath
 from tkinter import *
 
-
 class Node:
+
+    @staticmethod
+    def get_empty():
+        return Node('Empty', -1, None)
 
     def __init__(self, name, time, critical_parent):
         self.name = name
@@ -69,6 +72,16 @@ class TimeRange:
         self.end = end
         self.name = name
 
+    def get_start(self):
+        return TimeRange.int_if_same(self.start)
+
+    def get_end(self):
+        return TimeRange.int_if_same(self.end)
+
+    @staticmethod
+    def int_if_same(num):
+        return int(num) if int(num) == num else num
+
     def __lt__(self, other):
         return isinstance(other, TimeRange) and self.end < other.start
 
@@ -84,8 +97,11 @@ class TimeRange:
         return not self.__eq__(other)
 
 
+VERSION = 1.1
 INPUT_DATA = 'data.csv'
 OUTPUT_DATA = 'output.csv'
+
+pale_blue = '#c4d9ed'
 
 def parse_dependencies(dependencies):
     if dependencies == '':
@@ -121,9 +137,10 @@ def parse_data(clipboard_data=None, path_to_data=None):
         return None
 
     def get_clipboard_data(clipboard):
+        print(clipboard)
         rows = clipboard.split('\n')
 
-        headers = rows[0]
+        headers = rows[0].split('\t')
         dict_data_list = []
         for row in rows[1:-1]:
             columns = row.split('\t')
@@ -163,24 +180,25 @@ def parse_data(clipboard_data=None, path_to_data=None):
 
                 parsed_data[name] = node
             except KeyError:
-                print(f"There was an error parsing {INPUT_DATA}. Make sure you have all the columns"
-                      f" correctly named (name, time, dependencies) and check that {INPUT_DATA}'s formatting"
+                print(f"There was an error parsing {INPUT_DATA}. Make sure you have all the columns "
+                      f"correctly named (name, time, dependencies) and check that {INPUT_DATA}'s formatting "
                       f"hasn't been corrupted. In that case, simple re-enter the data and check it's saved "
                       f"after closing it.")
                 break
 
+        determine_free_time()
+
 def determine_critical_path():
-    global final_node
+    _final_node = get_final_node()
     critical_path = []
 
-    current_node = final_node
+    current_node = _final_node
 
     while current_node is not None:
         critical_path.append(current_node)
         current_node.is_critical = True
         current_node = current_node.get_critical_parent()
     return critical_path[::-1]
-
 
 def determine_supervisors():
     data = get_parsed_data()
@@ -197,24 +215,21 @@ def determine_supervisors():
 
     return supervisors
 
-
 def determine_free_supervisor(supervisors, time_range):
     for supervisor in supervisors:
         if supervisor.is_free_during(time_range):
             return supervisor
     return None
 
-
 def determine_free_time():
-    global final_node
+    _final_node = get_final_node()
     data = get_parsed_data()
 
     for name, node in data.items():
-        node.calculate_spare_time(final_node.get_end_time())
-
+        node.calculate_spare_time(_final_node.get_end_time())
 
 def write_parsed_data_to_csv():
-    global final_node
+    _final_node = get_final_node()
     data = get_parsed_data()
     if len(data.items()) == 0:
         print(f'{INPUT_DATA} is empty. Add data to it for the program to run.')
@@ -232,7 +247,7 @@ def write_parsed_data_to_csv():
                            "end time": node.get_end_time(), "spare time": node.spare_time, "is critical": node.is_critical}
                     writer.writerow(row)
                 writer.writerow({"name": "Critical Path:", "start time": " -> ".join([n.name for n in critical_path]),
-                                "spare time": "Total Time:", "is critical": final_node.get_end_time()})
+                                "spare time": "Total Time:", "is critical": _final_node.get_end_time()})
         except PermissionError:
             print(f"Couldn't save data because you had {OUTPUT_DATA} open.\n"
                   "Close the file and re-run the program.")
@@ -243,46 +258,47 @@ def get_parsed_data():
     global parsed_data
     try:
         parsed_data is None
+    # If parsed data is called before assignment
     except NameError:
         parsed_data = {}
     return parsed_data
 
-def calculate_answers():
-    determine_free_time()
-    supervisors = determine_supervisors()
-    print(f'Number of supervisors required is: {len(supervisors)}')
-    write_parsed_data_to_csv()
-
-    for supervisor in supervisors:
-        output = ""
-        last_time = 0
-        for working_time in supervisor.working_times:
-            not_working_time = working_time.start - last_time
-            last_time = working_time.end
-            output += " " * int(not_working_time)
-            output += working_time.name * int(working_time.end - working_time.start)
-        print(output)
-
+def get_final_node():
+    global final_node
+    try:
+        final_node is None
+    # If final node is called before assignment
+    except NameError:
+        final_node = Node.get_empty()
+    return final_node
 
 def build_app():
     root = Tk()
     root.title('Critical Path Calculator')
+    root.configure(background='white')
     frame = Frame(root)
-    frame.pack()
+    frame.configure(background='white')
+    frame.pack(side=TOP, fill=X)
 
-    def create_header(text, **kwargs):
-        header = create_label(text, **kwargs)
+    def create_header(text, container=frame, **settings):
+        header = create_label(text, container, **settings)
         #Add formatting to header
         return header
 
-    def create_label(text, **kwargs):
-        return Label(frame, text=str(text), **kwargs)
+    def create_label(text, container=frame, **settings):
+        settings.setdefault('bg', 'white')
+        return Label(container, text=str(text), **settings)
 
-    def create_button(text, container=frame, **kwargs):
-        return Button(container, text=text, **kwargs)
+    def create_button(text, container=frame, **settings):
+        settings.setdefault('bg', 'white')
+        return Button(container, text=text, **settings)
 
-    def add_to_grid(widget, row, column, **kwargs):
-        widget.grid(row=row, column=column, sticky="ew", pady=5, padx=5, **kwargs)
+    def add_to_grid(widget, row, column, **settings):
+
+        settings.setdefault('sticky', 'ew')
+        settings.setdefault('ipadx', 10)
+        settings.setdefault('ipady', 5)
+        widget.grid(row=row, column=column, **settings)
 
     def clear_ui():
         for child in frame.winfo_children():
@@ -292,14 +308,82 @@ def build_app():
         data = get_parsed_data()
 
         def save_parsed_data_to_clipboard():
-            data = get_parsed_data()
+            clipboard = "name\tstart_time\ttime\tend_time\tspare_time"
+            for _name, _node in data.items():
+                _row = _node.name + "\t" + str(_node.start_time) + "\t" + str(_node.time) + "\t" +\
+                      str(_node.get_end_time()) + "\t" + str(_node.spare_time)
+                clipboard += "\n" + _row
+            # Clear whats currently in the clipboard and replace it with the calculated data.
+            root.clipboard_clear()
+            root.clipboard_append(clipboard)
+            print(root.clipboard_get())
 
-        def create_row(node, row):
-            add_to_grid(create_label(node.name), row, 0)
-            add_to_grid(create_label(node.start_time), row, 1)
-            add_to_grid(create_label(node.time), row, 2)
-            add_to_grid(create_label(node.get_end_time()), row, 3)
-            add_to_grid(create_label(node.spare_time), row, 4)
+        def create_row(node, row, **settings):
+            add_to_grid(create_label(node.name,           **settings), row, 0)
+            add_to_grid(create_label(node.start_time,     **settings), row, 1)
+            add_to_grid(create_label(node.time,           **settings), row, 2)
+            add_to_grid(create_label(node.get_end_time(), **settings), row, 3)
+            add_to_grid(create_label(node.spare_time,     **settings), row, 4)
+
+        def create_supervisor_ui():
+            supervisors = determine_supervisors()
+
+            width = frame.winfo_width()
+            line_width = 10
+            vgap = 50
+            xpad = 10
+
+            supervisor_count = len(supervisors)
+            unit = width // get_final_node().get_end_time()
+
+            #highlightthickness=0 removed weird border around the canvas
+            canvas = Canvas(root, width=(unit * get_final_node().get_end_time()) + (2 * xpad),
+                            bg='white', bd=0, highlightthickness=0)
+
+            canvas.create_text(width // 2, vgap // 2,
+                               text=f'Number of supervisors required: {supervisor_count}',
+                               justify=CENTER)
+            row_index = 1.5
+            for supervisor in supervisors:
+                prev_time = None
+                for working_time in supervisor.working_times:
+
+                    #Prevents double ups occuring when a task finishes and another starts at the same time
+                    if prev_time is None or prev_time.end != working_time.start:
+                        #Display start time
+                        canvas.create_text((working_time.start * unit) + xpad, (row_index + 0.3) * vgap,
+                                           text=working_time.get_start(), justify=CENTER)
+
+                    #Create line representing task time.
+                    canvas.create_line((working_time.start * unit) + xpad, row_index * vgap,
+                                       (working_time.end * unit) + xpad, row_index * vgap,
+                                       width=line_width, fill=pale_blue)
+
+                    #Display end time
+                    canvas.create_text((working_time.end * unit) + xpad, (row_index + 0.3) * vgap,
+                                       text=working_time.get_end(), justify=CENTER)
+
+                    #Display task name in the middle of the line
+                    centre = ((working_time.start + working_time.end) * unit) / 2
+                    canvas.create_text(centre + xpad, (row_index - 0.3) * vgap,
+                                       text=working_time.name.strip(), justify=CENTER)
+
+                    prev_time = working_time
+                row_index += 1
+            canvas.pack()
+
+        def create_bottom_ui():
+            bottom_frame = Frame(root)
+            bottom_frame.pack()
+
+            add_to_grid(create_label(
+                'Critical Path: ' + " -> ".join([n.name for n in determine_critical_path()]),
+                container=bottom_frame), row=0, column=0, columnspan=5)
+            add_to_grid(create_label(
+                'Minimum Time: ' + str(get_final_node().get_end_time()),
+                container=bottom_frame), row=1, column=0, columnspan=5)
+            create_supervisor_ui()
+
 
         row = 0
         add_to_grid(create_header('Task'), row, 0)
@@ -307,25 +391,31 @@ def build_app():
         add_to_grid(create_header('Time Taken'), row, 2)
         add_to_grid(create_header('End Time'), row, 3)
         add_to_grid(create_header('Spare Time'), row, 4)
+        frame.columnconfigure(0, weight=1)
+        frame.columnconfigure(1, weight=1)
+        frame.columnconfigure(2, weight=1)
+        frame.columnconfigure(3, weight=1)
+        frame.columnconfigure(4, weight=1)
 
         row += 1
 
         for name, node in data.items():
-            create_row(node, row)
+            bg_colour = 'white' if row % 2 == 0 else pale_blue
+            create_row(node, row, bg=bg_colour)
             row += 1
 
-        bottom_frame = Frame(root)
-        bottom_frame.pack(side=BOTTOM)
+        middle_frame = Frame(root)
+        middle_frame.configure(background='white')
+        middle_frame.pack(fill=X)
+        middle_frame.columnconfigure(0, weight=1)
+        middle_frame.columnconfigure(1, weight=1)
+        add_to_grid(create_button('Save as file', container=middle_frame, command=write_parsed_data_to_csv),
+                    row=0, column=0)
+        add_to_grid(create_button('Copy to clipboard', container=middle_frame, command=save_parsed_data_to_clipboard),
+                    row=0, column=1)
 
-        save_data_button = create_button('Save as file',
-                                         container=bottom_frame,
-                                         command=write_parsed_data_to_csv)
-        save_data_button.pack(side=LEFT, fill=X)
-        copy_to_clipboard_button = create_button('Copy to clipboard',
-                                                 container=bottom_frame,
-                                                 command=save_parsed_data_to_clipboard)
-        copy_to_clipboard_button.pack(side=RIGHT, fill=X)
-
+        create_bottom_ui()
+        root.minsize(root.winfo_width(), root.winfo_height())
 
     def create_input_ui():
         def paste_data():
@@ -335,7 +425,6 @@ def build_app():
             except TclError:
                 print("Your clipboard is empty")
             else:
-                calculate_answers()
                 clear_ui()
                 create_output_ui()
 
@@ -344,7 +433,6 @@ def build_app():
             if path[-4:] != '.csv':
                 path += '.csv'
             parse_data(path_to_data=path)
-            calculate_answers()
             clear_ui()
             create_output_ui()
 
@@ -356,11 +444,10 @@ def build_app():
         upload_data_file_input = Entry(frame, text=f'{INPUT_DATA}', textvariable=content)
         upload_data_button.content = content
         content.set(INPUT_DATA)
-        add_to_grid(paste_data_button, 0, 0)
-        add_to_grid(upload_data_button, 0, 1)
-        add_to_grid(upload_data_file_input, 0, 2)
+        add_to_grid(paste_data_button, 0, 0, padx=5, pady=5)
+        add_to_grid(upload_data_button, 0, 1, padx=5, pady=5)
+        add_to_grid(upload_data_file_input, 0, 2, padx=5, pady=5)
 
-    #create_output_ui()
     create_input_ui()
     root.mainloop()
 
@@ -369,7 +456,6 @@ def main():
     build_app()
 
     input("Press enter to close the console.")
-
 
 
 if __name__ == '__main__':
