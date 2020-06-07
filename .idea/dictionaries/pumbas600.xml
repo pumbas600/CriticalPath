@@ -2,6 +2,8 @@
   <dictionary name="pumbas600">
     <words>
       <w>csvfile</w>
+      <w>vgap</w>
+      <w>xpad</w>
     </words>
   </dictionary>
 </component>
