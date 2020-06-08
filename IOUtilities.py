@@ -1,17 +1,20 @@
 import csv
 from _tkinter import TclError
 import os.path as ospath
+from enum import Enum
 
-class IOUtilities:
-    SUCCESS = None
-    FILE_NOT_FOUND = -1
-    FILE_MADE = -2
-    FILE_CURRENTLY_OPEN = -3
-    CLIPBOARD_EMPTY = -4
+class Errors(Enum):
+    SUCCESS = 'Successfully completed the action.'
+    FILE_NOT_FOUND = "The file, {}, couldn't be found."
+    FILE_MADE = "The file, {}, didn't exist and so it has been created."
+    FILE_CURRENTLY_OPEN = 'The file, {}, cannot be accessed because it is currently open.'
+    CLIPBOARD_EMPTY = 'Your clipboard is currently empty.'
 
     @staticmethod
-    def is_error(result):
-        return isinstance(result, int)
+    def is_error(error):
+        return error is Errors and error != Errors.SUCCESS
+
+class IOUtilities:
 
     @staticmethod
     def save_grid_list_to_clipboard(root, clipboard_list, item_to_list_converter,
@@ -26,7 +29,7 @@ class IOUtilities:
         if print_clipboard:
             print(root.clipboard_get())
 
-        return IOUtilities.SUCCESS
+        return Errors.SUCCESS
 
     @staticmethod
     def get_clipboard_as_dictionary_list(root):
@@ -43,7 +46,7 @@ class IOUtilities:
 
             return dictionary_list
         except TclError:
-            return IOUtilities.CLIPBOARD_EMPTY
+            return Errors.CLIPBOARD_EMPTY
 
     @staticmethod
     def get_csv_as_dictionary_list(path, not_found_callback=None):
@@ -54,7 +57,7 @@ class IOUtilities:
             if not_found_callback is not None:
                 return not_found_callback(path)
             else:
-                return IOUtilities.FILE_NOT_FOUND
+                return Errors.FILE_NOT_FOUND
 
         with open(path, 'r') as csvfile:
             return list(csv.DictReader(csvfile))
@@ -66,7 +69,7 @@ class IOUtilities:
                 writer = csv.DictWriter(csvfile, fieldnames=headers)
                 writer.writeheader()
                 csvfile.close()
-                return IOUtilities.FILE_MADE
+                return Errors.FILE_MADE
         return create_csv_file
 
     @staticmethod
@@ -83,7 +86,7 @@ class IOUtilities:
                     row = dict(zip(headers, item_to_list_converter(item)))
                     writer.writerow(row)
         except PermissionError:
-            return IOUtilities.FILE_CURRENTLY_OPEN
+            return Errors.FILE_CURRENTLY_OPEN
         else:
-            return IOUtilities.SUCCESS
+            return Errors.SUCCESS
 

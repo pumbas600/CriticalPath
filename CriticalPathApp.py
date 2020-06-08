@@ -32,8 +32,8 @@ class CriticalPathApp(TKDesigner):
         def on_paste_data():
             #TODO: Do further testing of partially incorrect clipboards
             result = IOUtilities.get_clipboard_as_dictionary_list(self)
-            if IOUtilities.is_error(result):
-                self.create_temporary_popup('Your clipboard is currently empty.')
+            if Errors.is_error(result):
+                self.create_temporary_popup(result.value)
             else:
                 self._data = result
                 if len(self._data) == 0:
@@ -48,11 +48,8 @@ class CriticalPathApp(TKDesigner):
 
             result = IOUtilities.get_csv_as_dictionary_list(path, not_found_callback=not_found_callback)
 
-            if IOUtilities.is_error(result):
-                if result == IOUtilities.FILE_NOT_FOUND:
-                    self.create_temporary_popup(f"The file, {path}, couldn't be found.")
-                elif result == IOUtilities.FILE_MADE:
-                    self.create_temporary_popup(f"The file, {path}, didn't exist and so it has been created.")
+            if Errors.is_error(result):
+                self.create_temporary_popup(result.value.format(path))
 
             else:
                 self._data = result
@@ -112,9 +109,8 @@ class CriticalPathApp(TKDesigner):
             )
 
             #There was an error writing the data to the file
-            if IOUtilities.is_error(result):
-                self.create_temporary_popup(f'There was an error writing to the file, {OUTPUT_DATA}, because '
-                                            f'it is currently open. Please close and reclick the button.')
+            if Errors.is_error(result):
+                self.create_temporary_popup(result.value.format(self.OUTPUT_DATA))
             else:
                 self.create_temporary_popup(f'Successfully saved the data to the file: {OUTPUT_DATA}.')
 
@@ -204,6 +200,7 @@ class CriticalPathApp(TKDesigner):
 def main():
     app = CriticalPathApp()
     app.mainloop()
+
 
 if __name__ == '__main__':
     main()

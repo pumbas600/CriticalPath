@@ -137,8 +137,12 @@ class TKDesigner(Tk):
     def create_button(self, text, container=None, **settings):
         def cooldown_callback():
             command()
-            button.config(state='disabled')
-            button.after(delay * 1000, lambda: button.config(state='active'))
+            try:
+                button.config(state='disabled')
+                button.after(delay * 1000, lambda: button.config(state='active'))
+            except TclError:
+                #If the button is destroyed, this will raise an error.
+                pass
 
         container = self.get_container(container)
         if 'cooldown' in settings:
@@ -297,8 +301,12 @@ class TKDesigner(Tk):
         def create_cooldown_callback(callback):
             def cooldown_callback(event):
                 callback(event)
-                button.config(state='disabled')
-                button.after(delay * 1000, lambda: button.config(state='active'))
+                try:
+                    button.config(state='disabled')
+                    button.after(delay * 1000, lambda: button.config(state='active'))
+                except TclError:
+                    pass
+                    #If the button's been destroyed then this will raise an error
             return cooldown_callback
 
         container = self.get_container(container)
@@ -350,12 +358,12 @@ class TKDesigner(Tk):
 
     def create_vertical_space(self, height, container=None, **settings):
         container = self.get_container(container)
-        frame = Frame(container, height=height)
+        frame = Frame(container, height=height, bg=self._background)
         settings.setdefault('fill', X)
         frame.pack(settings)
 
     def create_temporary_popup(self, message, window_name='Notice', time_to_close=1):
-        popup = Toplevel()
+        popup = Toplevel(bg=self._background)
         popup.title(window_name)
 
         self.create_label(text=message, container=popup).pack(fill=X, padx=30, pady=5)
