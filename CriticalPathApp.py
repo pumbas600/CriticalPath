@@ -31,7 +31,7 @@ class CriticalPathApp(TKDesigner):
 
         def on_paste_data():
             #TODO: Do further testing of partially incorrect clipboards
-            result = IOUtilities.get_clipboard_as_dictionary_list(self)
+            result = IOUtilities.get_clipboard_as_dictionary_list(self, lower_headers=True)
             if Errors.is_error(result):
                 self.create_temporary_popup(result.value)
             else:
@@ -46,7 +46,8 @@ class CriticalPathApp(TKDesigner):
             not_found_callback = IOUtilities.create_csv_file_callback(
                 self._data_headers) if path == self.INPUT_DATA else None
 
-            result = IOUtilities.get_csv_as_dictionary_list(path, not_found_callback=not_found_callback)
+            result = IOUtilities.get_csv_as_dictionary_list(path, not_found_callback=not_found_callback,
+                                                            lower_headers=True)
 
             if Errors.is_error(result):
                 self.create_temporary_popup(result.value.format(path))
@@ -60,7 +61,7 @@ class CriticalPathApp(TKDesigner):
 
         paste_button = self.create_button('Paste Data', command=on_paste_data, cooldown=1)
         upload_button, path_entry = self.create_button_entry_pair(
-            button_settings=self.settings(text='Upload Data', command=on_upload_data, cooldown=1),
+            button_settings=self.settings(text='Upload Data', bind=on_upload_data, cooldown=1),
             entry_settings=self.settings(text=self.INPUT_DATA))
 
         self.add_to_grid(paste_button, row=0, column=0, padding=5)
@@ -69,8 +70,47 @@ class CriticalPathApp(TKDesigner):
         self.set_column_weights(3)
 
     def display_input_data_ui(self):
-
         def on_parse_data():
+            def validate_data():
+                def check_headers():
+                    input_headers = list(self._data[0].keys())
+                    if len(input_headers) != len(self._data_headers):
+                        self.create_temporary_popup(f"There doesn't seem to be the correct number of columns. Make sure "
+                                                    f"you have the following columns: {', '.join(self._data_headers)}.")
+                        return False
+                    else:
+                        for h in self._data_headers:
+                            if h not in input_headers:
+                                self.create_temporary_popup(f'You seem to be missing the column: {h}.')
+                                return False
+                    return True
+
+                def check_dependencies_and_time():
+                    tasks = []
+                    for row in self._data:
+                        dependencies = parse_dependencies(row['dependencies'])
+                        if row['name'].upper() in dependencies:
+                            self.create_temporary_popup(f'The task {row["name"]}, cannot be dependent on itself.')
+                            return False
+                        tasks.append(row['name'].upper())
+                        if not all([d in tasks for d in dependencies]):
+                            self.create_temporary_popup(f'Dependencies on a task, must come after that task in the '
+                                                        f'dataset for the row {row["name"]}.')
+                            return False
+                        try:
+                            float(row['time'])
+                        except ValueError:
+                            self.create_temporary_popup(f"The time for the task {row['name']}, doesn't seem "
+                                                        f"to be a number.")
+                            return False
+
+                    return True
+
+                if not all([check_headers(), check_dependencies_and_time()]):
+                    self.clear_ui()
+                    self.display_get_input_data_ui()
+
+            validate_data()
             solve_data(self._data)
             self.clear_ui()
             self.display_output_data_ui()

@@ -32,12 +32,15 @@ class IOUtilities:
         return Errors.SUCCESS
 
     @staticmethod
-    def get_clipboard_as_dictionary_list(root):
+    def get_clipboard_as_dictionary_list(root, lower_headers=False):
         try:
             clipboard = root.clipboard_get()
             rows = clipboard.split('\n')
 
             headers = rows[0].split('\t')
+            if lower_headers:
+                headers = [h.lower() for h in headers]
+
             dictionary_list = []
             for row in rows[1:-1]:
                 columns = row.split('\t')
@@ -49,7 +52,7 @@ class IOUtilities:
             return Errors.CLIPBOARD_EMPTY
 
     @staticmethod
-    def get_csv_as_dictionary_list(path, not_found_callback=None):
+    def get_csv_as_dictionary_list(path, not_found_callback=None, lower_headers=False):
         if path[-4:] != '.csv':
             path += '.csv'
 
@@ -60,7 +63,10 @@ class IOUtilities:
                 return Errors.FILE_NOT_FOUND
 
         with open(path, 'r') as csvfile:
-            return list(csv.DictReader(csvfile))
+            reader = csv.DictReader(csvfile)
+            if lower_headers:
+                reader.fieldnames = [h.lower().strip() for h in reader.fieldnames]
+            return list(reader)
 
     @staticmethod
     def create_csv_file_callback(headers):

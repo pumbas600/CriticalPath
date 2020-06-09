@@ -32,13 +32,7 @@ class TKDesigner(Tk):
 
     @staticmethod
     def add_to_grid(widget, row, column, **settings):
-        def parse_custom_settings():
-            if 'padding' in settings:
-                settings['padx'] = settings['padding']
-                settings['pady'] = settings['padding']
-                del settings['padding']
-
-        parse_custom_settings()
+        settings = TKDesigner.get_custom_settings(Grid, **settings)
         settings.setdefault('sticky', 'ew')
         settings.setdefault('ipadx', 10)
         settings.setdefault('ipady', 5)
@@ -88,6 +82,90 @@ class TKDesigner(Tk):
         y = (parent_height // 2) - (height // 2) + offsety
         window.geometry(f'+{x}+{y}')
 
+    @staticmethod
+    def get_custom_settings(widget_type, **settings):
+        custom_settings = []
+
+        def padding():
+            padding = settings['padding']
+            settings['padx'] = padding
+            settings['pady'] = padding
+            del settings['padding']
+
+        def cooldown():
+            def cooldown_function(widget):
+                def cooldown_delay(event=None):
+                    if event is not None:
+                        command(event)
+                    else:
+                        command()
+                    try:
+                        widget.config(state='disabled')
+                        widget.after(delay * 1000, lambda: widget.config(state='active'))
+                    except TclError:
+                        pass
+                        # If the button's been destroyed then this will raise an error
+
+                if iscommand:
+                    widget.config(command=cooldown_delay)
+                else:
+                    widget.bind(button, cooldown_delay)
+
+            delay = settings['cooldown']
+            iscommand = True
+            if 'command' in settings:
+                command = settings['command']
+                del settings['command']
+
+            elif 'bind' in settings:
+                iscommand = False
+                command = settings['bind']
+                button = settings['button']
+                del settings['bind']
+                del settings['button']
+            del settings['cooldown']
+            return cooldown_function
+
+        def bind():
+            def bind_function(widget):
+                widget.bind(button, command)
+
+            command = settings['bind']
+            button = settings['mouse']
+            del settings['bind']
+            del settings['mouse']
+            return bind_function
+
+        custom_setting_methods = {
+            Button: {
+                'padding': padding,
+                'cooldown': cooldown,
+                'bind': bind
+            },
+            Label: {
+                'padding': padding
+            },
+            Grid: {
+                'padding': padding
+            }
+        }
+
+        #Determine what custom settings are in the settings
+        for custom_setting in custom_setting_methods[widget_type].keys():
+            if custom_setting in settings:
+                method = custom_setting_methods[widget_type][custom_setting]()
+                if method is not None:
+                    custom_settings.append(method)
+
+        if widget_type is Grid:
+            return settings
+        return custom_settings, settings
+
+    @staticmethod
+    def set_custom_settings(widget, custom_settings):
+        for setting in custom_settings:
+            setting(widget)
+
     def __init__(self):
         super().__init__()
 
@@ -124,35 +202,23 @@ class TKDesigner(Tk):
 
     def create_label(self, text, container=None, **settings):
         container = self.get_container(container)
+        custom_settings, settings = self.get_custom_settings(Label, **settings)
         settings = self.set_default_widget_settings(**settings)
-
-        return Label(container, text=str(text), **settings)
+        label = Label(container, text=str(text), **settings)
+        self.set_custom_settings(label, custom_settings)
+        return label
 
     def create_header(self, text, container=None, **settings):
         header = self.create_label(text, container, **settings)
-        header.configure(font=self._header_font)
-
+        header.config(font=self._header_font)
         return header
 
     def create_button(self, text, container=None, **settings):
-        def cooldown_callback():
-            command()
-            try:
-                button.config(state='disabled')
-                button.after(delay * 1000, lambda: button.config(state='active'))
-            except TclError:
-                #If the button is destroyed, this will raise an error.
-                pass
-
         container = self.get_container(container)
-        if 'cooldown' in settings:
-            delay = settings['cooldown']
-            command = settings['command']
-            settings['command'] = cooldown_callback
-            del settings['cooldown']
-
+        custom_settings, settings = self.get_custom_settings(Button, **settings)
         settings = self.set_default_widget_settings(**settings)
         button = Button(container, text=text, **settings)
+        self.set_custom_settings(button, custom_settings)
         return button
 
     def create_entry(self, container=None, **settings):
@@ -162,13 +228,6 @@ class TKDesigner(Tk):
         return Entry(container, settings)
 
     def set_default_widget_settings(self, **settings):
-        def parse_custom_settings():
-            if 'padding' in settings:
-                settings['padx'] = settings['padding']
-                settings['pady'] = settings['padding']
-                del settings['padding']
-
-        parse_custom_settings()
         settings.setdefault('bg', self._background)
         settings.setdefault('font', self._label_font)
         return settings
@@ -293,33 +352,13 @@ class TKDesigner(Tk):
             weight = weights[i] if isinstance(weights, tuple) else weights
             container.columnconfigure(i, weight=weight, **settings)
 
-    def create_button_entry_pair(self, button_settings, entry_settings, container=None,
-                                 mouse_button='<Button-1>'):
+    def create_button_entry_pair(self, button_settings, entry_settings, container=None):
 
         #TODO: Don't cooldown if button's been destroyed.
         #TODO: Make a more flexible cooldown/custom parameters system.
-        def create_cooldown_callback(callback):
-            def cooldown_callback(event):
-                callback(event)
-                try:
-                    button.config(state='disabled')
-                    button.after(delay * 1000, lambda: button.config(state='active'))
-                except TclError:
-                    pass
-                    #If the button's been destroyed then this will raise an error
-            return cooldown_callback
-
         container = self.get_container(container)
-        command = button_settings['command']
-
-        if 'cooldown' in button_settings:
-            delay = button_settings['cooldown']
-            command = create_cooldown_callback(command)
-            del button_settings['cooldown']
-        del button_settings['command']
-
+        button_settings.setdefault('button', '<Button-1>')
         button = self.create_button(container=container, **button_settings)
-        button.bind(mouse_button, command)
 
         content = StringVar()
         button.content = content
