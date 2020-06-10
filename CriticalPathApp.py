@@ -226,19 +226,20 @@ class CriticalPathApp(TKDesigner):
                 canvas.create_text(self.find_centre_of(x1, x), upy, text=node.start_time)
                 canvas.create_text(self.find_centre_of(x, x2), upy, text=node.get_end_time())
 
-            canvas = ResizingCanvas(right)
+            self.update()
+            canvas = ResizingCanvas(container=right, height=left.winfo_height())
             canvas.pack()
 
-            columns = {}
+            rows = {}
             for node in data.values():
-                column = 0
+                row = 0
                 if len(node.dependencies) != 0:
-                    max_dependency_column = max([columns[d] for d in node.dependencies])
-                    column = max_dependency_column + 1
+                    max_dependency_column = max([rows[d] for d in node.dependencies])
+                    row = max_dependency_column + 1
 
-                row = list(columns.values()).count(column)
-                make_node(column * (1.5 * width), row * (5 * height_step), node)
-                columns[node] = column
+                column = list(rows.values()).count(row)
+                make_node(column * (1.5 * width), row * (10 * height_step), node)
+                rows[node] = row
 
         #Reset window size if it has been adjusted
         self.geometry('')
