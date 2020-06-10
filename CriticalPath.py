@@ -1,6 +1,3 @@
-import csv
-from os import path as ospath
-
 def int_if_same(num):
     return int(num) if int(num) == num else round(num, 1)
 
@@ -8,11 +5,12 @@ class Node:
 
     @staticmethod
     def get_empty():
-        return Node('Empty', -1, None)
+        return Node('Empty', -1, [], None)
 
-    def __init__(self, name, time, critical_parent):
+    def __init__(self, name, time, dependencies, critical_parent):
         self.name = name
         self.time = time
+        self.dependencies = dependencies
         self.critical_parent = critical_parent
         self.critical_child = None
         self.start_time = critical_parent.get_end_time() if critical_parent is not None else 0
@@ -134,7 +132,7 @@ def solve_data(data):
                 if len(dependencies) != 0:
                     critical_node = max(dependencies, key=lambda node: node.get_end_time())
 
-                node = Node(name, time, critical_node)
+                node = Node(name, time, dependencies, critical_node)
                 for n in dependencies:
                     # If the start time is sooner than node n's current critical child, then it
                     # updates it to this node.

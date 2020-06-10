@@ -354,7 +354,6 @@ class TKDesigner(Tk):
 
     def create_button_entry_pair(self, button_settings, entry_settings, container=None):
 
-        #TODO: Don't cooldown if button's been destroyed.
         #TODO: Make a more flexible cooldown/custom parameters system.
         container = self.get_container(container)
         button_settings.setdefault('button', '<Button-1>')

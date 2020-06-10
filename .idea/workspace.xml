@@ -3,8 +3,8 @@
   <component name="ChangeListManager">
     <list default="true" id="562797ed-0db7-449f-be63-8e0275133507" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CriticalPath.py" beforeDir="false" afterPath="$PROJECT_DIR$/CriticalPath.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/CriticalPathApp.py" beforeDir="false" afterPath="$PROJECT_DIR$/CriticalPathApp.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/IOUtilities.py" beforeDir="false" afterPath="$PROJECT_DIR$/IOUtilities.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/TKDesigner.py" beforeDir="false" afterPath="$PROJECT_DIR$/TKDesigner.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />

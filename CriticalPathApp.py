@@ -110,6 +110,8 @@ class CriticalPathApp(TKDesigner):
                     self.clear_ui()
                     self.display_get_input_data_ui()
 
+            # TODO: Check the input data validation
+            # TODO: Maybe not make it instantly take you back, but just prevent you parsing the data.
             validate_data()
             solve_data(self._data)
             self.clear_ui()
@@ -117,7 +119,6 @@ class CriticalPathApp(TKDesigner):
 
         #Reset window size if it has been adjusted
         self.geometry('')
-        #TODO: Check for invalid data formatting
         if self._data is None:
             self.create_temporary_popup("Something went wrong and the data hasn't been correctly loaded")
             return
@@ -158,7 +159,7 @@ class CriticalPathApp(TKDesigner):
             supervisors = determine_supervisors()
             supervisor_count = len(supervisors)
             self.create_label(f'Number of supervisors required: {supervisor_count}',
-                              anchor=W, padx=5).pack(fill=X)
+                              anchor=W, padx=5, container=left).pack(fill=X)
 
             line_width = 10
             vgap = 45
@@ -171,7 +172,7 @@ class CriticalPathApp(TKDesigner):
 
             height = supervisor_count * (vgap + line_width)
 
-            canvas = ResizingCanvas(self, width=width, height=height)
+            canvas = ResizingCanvas(left, width=width, height=height)
             canvas.pack(fill=X, expand=True)
 
             row_index = 0
@@ -204,12 +205,53 @@ class CriticalPathApp(TKDesigner):
 
                     prev_time = working_time
 
+        def draw_network():
+            height_step = 12
+            width = 64
+
+            def make_node(x, y, node):
+                def create_rectangle(x1, y1, x2, y2):
+                    canvas.create_rectangle(x1, y1, x2, y2, width=2, fill=self._background)
+
+                x1 = x - (width / 2)
+                x2 = x + (width / 2)
+                upy = self.find_centre_of(y - height_step, y - (2 * height_step))
+
+                create_rectangle(x1, y - (2 * height_step), x2, y - height_step)
+                create_rectangle(x1, y - height_step, x2, y + height_step)
+                create_rectangle(x1, y + height_step, x2, y + (2 * height_step))
+                canvas.create_text(x, y, text=node.name, font=self._header_font)
+                canvas.create_text(x, self.find_centre_of(y + height_step, y + (2 * height_step)), text=node.spare_time)
+                canvas.create_text(x, upy, text=node.time)
+                canvas.create_text(self.find_centre_of(x1, x), upy, text=node.start_time)
+                canvas.create_text(self.find_centre_of(x, x2), upy, text=node.get_end_time())
+
+            canvas = ResizingCanvas(right)
+            canvas.pack()
+
+            columns = {}
+            for node in data.values():
+                column = 0
+                if len(node.dependencies) != 0:
+                    max_dependency_column = max([columns[d] for d in node.dependencies])
+                    column = max_dependency_column + 1
+
+                row = list(columns.values()).count(column)
+                make_node(column * (1.5 * width), row * (5 * height_step), node)
+                columns[node] = column
+
         #Reset window size if it has been adjusted
         self.geometry('')
+
+        left = Frame(self, bg=self._background)
+        left.pack(side=LEFT)
+        right = Frame(self, bg=self._background)
+        right.pack(side=RIGHT)
 
         data = get_parsed_data()
         self.grid_from_list(
             list(data.values()),
+            container=left,
             item_to_list_converter=self.item_to_list_converter,
             headers=['Task', 'Start Time', 'Time Taken', 'End Time', 'Spare Time'],
         ).pack(fill=BOTH)
@@ -218,10 +260,11 @@ class CriticalPathApp(TKDesigner):
             (self.create_button,
              self.settings(text='Copy to Clipboard', command=on_save_data_to_clipboard, cooldown=1)),
             (self.create_button,
-             self.settings(text='Save as File', command=on_save_data_to_file, cooldown=1))
+             self.settings(text='Save as File', command=on_save_data_to_file, cooldown=1)),
+            container=left
         ).pack(fill=X)
 
-        self.create_vertical_space(15)
+        self.create_vertical_space(15, container=left)
         self.create_single_row(
             (self.create_label,
              self.settings(text='Critical Path: ', font=self.get_bold_font(self._label_font), anchor=E)),
@@ -230,11 +273,13 @@ class CriticalPathApp(TKDesigner):
             (self.create_label,
              self.settings(text='Minimum Time: ', font=self.get_bold_font(self._label_font), anchor=E)),
             (self.create_label,
-             self.settings(text=str(int_if_same(get_final_node().get_end_time())), anchor=W))
+             self.settings(text=str(int_if_same(get_final_node().get_end_time())), anchor=W)),
+            container=left
         ).pack(fill=X)
 
-        self.create_header('Supervisor Distribution', padding=5).pack(fill=X)
+        self.create_header('Supervisor Distribution', padding=5, container=left).pack(fill=X)
         display_supervisor_ui()
+        draw_network()
         self.set_current_size_as_min()
 
 def main():
