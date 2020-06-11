@@ -21,6 +21,7 @@ class ResizingCanvas(Canvas):
         #Determine the ration of old width/height to new width/height
         wscale = float(event.width) / self.width
         hscale = float(event.height) / self.height
+
         self.width = event.width
         self.height = event.height
         self.config(width=self.width, height=self.height)
@@ -55,6 +56,12 @@ class TKDesigner(Tk):
     def get_bold_font(font):
         bold_font = font[0:2] + ('bold',)
         return bold_font
+
+    @staticmethod
+    def set_font_size(font, size):
+        new_font = (font[0],) + (size,)
+        if len(font) > 2: new_font += font[2:]
+        return new_font
 
     @staticmethod
     def create_popup(message, window_name='Notice'):
@@ -188,6 +195,8 @@ class TKDesigner(Tk):
 
     def clear_ui(self):
         for child in self.winfo_children():
+            if child is Toplevel:
+                print("Toplevel child found")
             child.destroy()
 
     def set_header_font(self, font):
@@ -236,7 +245,8 @@ class TKDesigner(Tk):
         self.update()
         self.minsize(self.winfo_width(), self.winfo_height())
 
-    def create_row_from_dict(self, dictionary, container, row, bg, label_method=None, **column_formatting):
+    def create_row_from_dict(self, dictionary, container, row, bg, label_method=None,
+                             column_formatting=None, row_formatting=None):
         """
         Creates a row from a dictionary
         :param dictionary: The dictionary from which to create the row
@@ -245,8 +255,11 @@ class TKDesigner(Tk):
         :param bg: The background colour of the row
         :param label_method: The method used to create the label
         :param column_formatting: A dictionary containing methods which return a formatted value
+        :param row_formatting: A list containing methods which will output label formatting
         """
         label_method = self.create_label if label_method is None else label_method
+        if column_formatting is None: column_formatting = {}
+        if row_formatting is None: row_formatting = []
 
         headers = list(dictionary.keys())
         for i in range(len(headers)):
@@ -256,8 +269,11 @@ class TKDesigner(Tk):
                 value = column_formatting[header](value)
             elif 'default' in column_formatting:
                 value = column_formatting['default'](value)
+            label_settings = {}
+            for row_formator in row_formatting:
+                label_settings += row_formator(value)
 
-            TKDesigner.add_to_grid(label_method(value, container=container, bg=bg), row, i)
+            TKDesigner.add_to_grid(label_method(value, container=container, bg=bg, **label_settings), row, i)
 
     def create_row_from_list(self, row_list, container, row, bg, label_method=None, **column_formatting):
         """
@@ -281,8 +297,8 @@ class TKDesigner(Tk):
 
             TKDesigner.add_to_grid(label_method(value, container=container, bg=bg), row, i)
 
-    def grid_from_list_of_dict(self, dictionary_list, container=None,
-                               bg1=None, bg2=pale_blue, **column_formatting):
+    def grid_from_list_of_dict(self, dictionary_list, container=None, bg1=None, bg2=pale_blue,
+                               column_formatting=None, row_formatting=None):
         """
         Makes a grid from a list of dictionaries
         :param dictionary_list: The list of dictionaries from which to create the grid
@@ -290,6 +306,7 @@ class TKDesigner(Tk):
         :param bg1: Alternate row colour 1
         :param bg2: Alternate row colour 2
         :param column_formatting: A dictionary containing methods which return formatted values
+        :param row_formatting: A list containing methods which will output label formatting
         :return: Frame containing the grid
         """
 
@@ -307,7 +324,8 @@ class TKDesigner(Tk):
         for dictionary in dictionary_list:
             row += 1
             bg = bg1 if row % 2 == 0 else bg2
-            self.create_row_from_dict(dictionary, container=frame, row=row, bg=bg, **column_formatting)
+            self.create_row_from_dict(dictionary, container=frame, row=row, bg=bg,
+                                      column_formatting=column_formatting, row_formatting=row_formatting)
         return frame
 
     def grid_from_list(self, grid_list, item_to_list_converter, headers=None, container=None,
@@ -401,10 +419,14 @@ class TKDesigner(Tk):
         frame.pack(settings)
 
     def create_temporary_popup(self, message, window_name='Notice', time_to_close=1):
+        def test():
+            print('destroy')
+            popup.destroy()
+
         popup = Toplevel(bg=self._background)
         popup.title(window_name)
 
         self.create_label(text=message, container=popup).pack(fill=X, padx=30, pady=5)
         self.centre_window(popup, centre_on=self)
-        self.after(time_to_close * 1000, popup.destroy)
+        self.after(time_to_close * 1000, test)
 

@@ -16,6 +16,8 @@ class Node:
         self.start_time = critical_parent.get_end_time() if critical_parent is not None else 0
         self.is_critical = False
         self.spare_time = 0
+        self.x = -1
+        self.y = -1
 
     def get_end_time(self):
         return self.start_time + self.time

@@ -59,6 +59,9 @@ class CriticalPathApp(TKDesigner):
                 else:
                     on_got_input_data()
 
+        #Reset window size if it has been adjusted
+        self.geometry('')
+        self.minsize(-1, -1)
         paste_button = self.create_button('Paste Data', command=on_paste_data, cooldown=1)
         upload_button, path_entry = self.create_button_entry_pair(
             button_settings=self.settings(text='Upload Data', bind=on_upload_data, cooldown=1),
@@ -68,6 +71,7 @@ class CriticalPathApp(TKDesigner):
         self.add_to_grid(upload_button, row=0, column=1, padding=5)
         self.add_to_grid(path_entry, row=0, column=2, padding=5)
         self.set_column_weights(3)
+        self.set_current_size_as_min()
 
     def display_input_data_ui(self):
         def on_parse_data():
@@ -75,62 +79,90 @@ class CriticalPathApp(TKDesigner):
                 def check_headers():
                     input_headers = list(self._data[0].keys())
                     if len(input_headers) != len(self._data_headers):
-                        self.create_temporary_popup(f"There doesn't seem to be the correct number of columns. Make sure "
-                                                    f"you have the following columns: {', '.join(self._data_headers)}.")
-                        return False
+                        return f"There doesn't seem to be the correct number of columns. Make sure \
+                               you have the following columns: {', '.join(self._data_headers)}."
                     else:
                         for h in self._data_headers:
                             if h not in input_headers:
-                                self.create_temporary_popup(f'You seem to be missing the column: {h}.')
-                                return False
+                                return f'You seem to be missing the column: {h}.'
+                            if input_headers.count(h) > 1:
+                                return f'You seem to have the column, {h}, {input_headers.count(h)} times.'
                     return True
 
-                def check_dependencies_and_time():
+                def check_data():
                     tasks = []
                     for row in self._data:
                         dependencies = parse_dependencies(row['dependencies'])
                         if row['name'].upper() in dependencies:
-                            self.create_temporary_popup(f'The task {row["name"]}, cannot be dependent on itself.')
-                            return False
+                            return f'The task {row["name"]}, cannot be dependent on itself.', row['name']
+
+                        if row['name'].upper() in tasks:
+                            return f'The task {row["name"]}, has been specified twice. This is not allowed.',\
+                                   row['name']
+
                         tasks.append(row['name'].upper())
                         if not all([d in tasks for d in dependencies]):
-                            self.create_temporary_popup(f'Dependencies on a task, must come after that task in the '
-                                                        f'dataset for the row {row["name"]}.')
-                            return False
+                            return f'Dependencies for a task, must come after that task in the dataset for the' \
+                                   f' row {row["name"]}.', row['name']
                         try:
                             float(row['time'])
                         except ValueError:
-                            self.create_temporary_popup(f"The time for the task {row['name']}, doesn't seem "
-                                                        f"to be a number.")
-                            return False
+                            return f"The time for the task {row['name']}, doesn't seem to be a number.", row['name']
 
                     return True
 
-                if not all([check_headers(), check_dependencies_and_time()]):
+                headers_result = check_headers()
+                data_result = check_data()
+
+                if not all([headers_result is bool, data_result is bool]):
                     self.clear_ui()
                     self.display_get_input_data_ui()
+                    return False
+                return True
 
             # TODO: Check the input data validation
             # TODO: Maybe not make it instantly take you back, but just prevent you parsing the data.
-            validate_data()
+            if not validate_data(): return
+
             solve_data(self._data)
             self.clear_ui()
             self.display_output_data_ui()
 
         #Reset window size if it has been adjusted
         self.geometry('')
+        self.minsize(-1, -1)
         if self._data is None:
             self.create_temporary_popup("Something went wrong and the data hasn't been correctly loaded")
             return
 
         self.grid_from_list_of_dict(
             self._data,
-            name=lambda n: n.capitalize(),
-            dependencies=lambda x: ', '.join(d.upper() for d in x.split(','))
+            column_formatting=self.settings(
+                name=lambda n: n.capitalize(),
+                dependencies=lambda x: ', '.join(d.upper() for d in x.split(',')))
         ).pack(fill=BOTH)
 
         self.create_button('Parse Data', command=on_parse_data, padding=5).pack(fill=X)
         self.set_current_size_as_min()
+
+    def display_errored_input_data_ui(self, error_result):
+        def errored_task_formatting(value):
+            if value == errored_task:
+                pass
+
+        #Reset window size if it has been adjusted
+        self.geometry('')
+        self.minsize(-1, -1)
+
+        error_message = error_result[0]
+        errored_task = error_result[1]
+
+        self.grid_from_list_of_dict(
+            self._data,
+            column_formatting=self.settings(
+                name=lambda n: n.capitalize(),
+                dependencies=lambda x: ', '.join(d.upper() for d in x.split(',')))
+        ).pack(fill=BOTH)
 
     def display_output_data_ui(self):
         def on_save_data_to_clipboard():
@@ -206,47 +238,80 @@ class CriticalPathApp(TKDesigner):
                     prev_time = working_time
 
         def draw_network():
-            height_step = 12
             width = 64
+            steps_in_gapy = 8
 
             def make_node(x, y, node):
-                def create_rectangle(x1, y1, x2, y2):
-                    canvas.create_rectangle(x1, y1, x2, y2, width=2, fill=self._background)
+                def create_rectangle(x1, y1, x2, y2, **settings):
+                    settings.setdefault('fill', self._background)
+                    canvas.create_rectangle(x1, y1, x2, y2, width=2, **settings)
+
+                textpadx = 3
 
                 x1 = x - (width / 2)
                 x2 = x + (width / 2)
                 upy = self.find_centre_of(y - height_step, y - (2 * height_step))
 
+                font = self.set_font_size(self._label_font, int(0.7 * height_step))
+                name_font = self.set_font_size(self._header_font, int(height_step))
+
                 create_rectangle(x1, y - (2 * height_step), x2, y - height_step)
-                create_rectangle(x1, y - height_step, x2, y + height_step)
+                create_rectangle(x1, y - height_step, x2, y + height_step, fill=pale_blue)
                 create_rectangle(x1, y + height_step, x2, y + (2 * height_step))
-                canvas.create_text(x, y, text=node.name, font=self._header_font)
-                canvas.create_text(x, self.find_centre_of(y + height_step, y + (2 * height_step)), text=node.spare_time)
-                canvas.create_text(x, upy, text=node.time)
-                canvas.create_text(self.find_centre_of(x1, x), upy, text=node.start_time)
-                canvas.create_text(self.find_centre_of(x, x2), upy, text=node.get_end_time())
+                canvas.create_text(x, y, text=node.name, font=name_font)
+                canvas.create_text(x, self.find_centre_of(y + height_step, y + (2 * height_step)),
+                                   text=int_if_same(node.spare_time), font=font)
+                canvas.create_text(x, upy,  text=int_if_same(node.time), font=font)
+                canvas.create_text(x1 + textpadx, upy, text=int_if_same(node.start_time), anchor=W, font=font)
+                canvas.create_text(x2 - textpadx, upy, text=int_if_same(node.get_end_time()), anchor=E, font=font)
 
-            self.update()
-            canvas = ResizingCanvas(container=right, height=left.winfo_height())
-            canvas.pack()
+                for dependency in node.dependencies:
+                    posx = dependency.x * gapx + padx
+                    posy = dependency.y * gapy + pady + (2 * height_step)
+                    canvas.create_line(posx, posy + 3, x, y - (2 * height_step) - 3, arrow=LAST)
 
-            rows = {}
+            #Determine all the node positions first so that they can be used to determine the
+            #correct height_step so that they perfectly fill the screen.
+            rows = [[]]
             for node in data.values():
                 row = 0
                 if len(node.dependencies) != 0:
-                    max_dependency_column = max([rows[d] for d in node.dependencies])
-                    row = max_dependency_column + 1
+                    max_dependency_row = max([d.y for d in node.dependencies])
+                    row = max_dependency_row + 1
+                    if row >= len(rows):
+                        rows.append([])
 
-                column = list(rows.values()).count(row)
-                make_node(column * (1.5 * width), row * (10 * height_step), node)
-                rows[node] = row
+                node.x = len(rows[row])
+                node.y = row
+                rows[row].append(node)
+
+            padx = 55
+            pady = 55
+            gapx = int(1.5 * width)
+
+            self.update()
+            num_rows = len(rows)
+
+            canvas_width = (max(len(r) for r in rows) - 1) * gapx + 2 * padx
+            height_step = (left.winfo_height() - 4 - (2 * pady)) / ((num_rows - 1) * steps_in_gapy)
+
+            gapy = steps_in_gapy * height_step
+
+            #-4 on the height is due to the border of 2px it has.
+            canvas = ResizingCanvas(right, height=left.winfo_height() - 4, width=canvas_width)
+            canvas.pack()
+            for y in range(len(rows)):
+                row = rows[y]
+                for x in range(len(row)):
+                    node = row[x]
+                    make_node(x * gapx + padx, y * gapy + pady, node)
 
         #Reset window size if it has been adjusted
         self.geometry('')
 
-        left = Frame(self, bg=self._background)
+        left = Frame(self, bg=self._background, relief=GROOVE, bd=2)
         left.pack(side=LEFT)
-        right = Frame(self, bg=self._background)
+        right = Frame(self, bg=self._background, relief=GROOVE, bd=2)
         right.pack(side=RIGHT)
 
         data = get_parsed_data()
