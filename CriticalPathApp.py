@@ -102,8 +102,8 @@ class CriticalPathApp(TKDesigner):
 
                         tasks.append(row['name'].upper())
                         if not all([d in tasks for d in dependencies]):
-                            return f'Dependencies for a task, must come after that task in the dataset for the' \
-                                   f' row {row["name"]}.', row['name']
+                            return f'Dependencies for a task, must come after that task in the dataset for ' \
+                                   f'task {row["name"]}.', row['name']
                         try:
                             float(row['time'])
                         except ValueError:
@@ -113,10 +113,14 @@ class CriticalPathApp(TKDesigner):
 
                 headers_result = check_headers()
                 data_result = check_data()
-
-                if not all([headers_result is bool, data_result is bool]):
+                print(f'{headers_result is True}, {data_result is True}')
+                print(all([headers_result, data_result]))
+                if not all([headers_result is True, data_result is True]):
                     self.clear_ui()
-                    self.display_get_input_data_ui()
+                    if headers_result is not True:
+                        self.display_errored_input_data_ui(headers_result)
+                    else:
+                        self.display_errored_input_data_ui(data_result[0], data_result[1])
                     return False
                 return True
 
@@ -145,24 +149,30 @@ class CriticalPathApp(TKDesigner):
         self.create_button('Parse Data', command=on_parse_data, padding=5).pack(fill=X)
         self.set_current_size_as_min()
 
-    def display_errored_input_data_ui(self, error_result):
-        def errored_task_formatting(value):
-            if value == errored_task:
-                pass
+    def display_errored_input_data_ui(self, error_message, errored_node=None):
+        def errored_task_formatting(dictionary):
+            if errored_node is not None:
+                if 'name' in dictionary and dictionary['name'].upper() == errored_node.upper():
+                    return {'bg': 'red'}
+            return {}
+
+        def on_go_back():
+            self.clear_ui()
+            self.display_get_input_data_ui()
 
         #Reset window size if it has been adjusted
         self.geometry('')
         self.minsize(-1, -1)
 
-        error_message = error_result[0]
-        errored_task = error_result[1]
-
         self.grid_from_list_of_dict(
             self._data,
             column_formatting=self.settings(
                 name=lambda n: n.capitalize(),
-                dependencies=lambda x: ', '.join(d.upper() for d in x.split(',')))
+                dependencies=lambda x: ', '.join(d.upper() for d in x.split(','))),
+            row_formatting=[errored_task_formatting] if errored_node is not None else []
         ).pack(fill=BOTH)
+        self.create_button('Go Back', command=on_go_back, padding=5).pack(fill=X)
+        self.create_centred_popup(error_message)
 
     def display_output_data_ui(self):
         def on_save_data_to_clipboard():
