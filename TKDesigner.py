@@ -261,6 +261,11 @@ class TKDesigner(Tk):
         if column_formatting is None: column_formatting = {}
         if row_formatting is None: row_formatting = []
 
+        label_settings = {}
+        label_settings.setdefault('bg', bg)
+        for row_formator in row_formatting:
+            label_settings.update(row_formator(dictionary))
+
         headers = list(dictionary.keys())
         for i in range(len(headers)):
             header = headers[i]
@@ -269,11 +274,8 @@ class TKDesigner(Tk):
                 value = column_formatting[header](value)
             elif 'default' in column_formatting:
                 value = column_formatting['default'](value)
-            label_settings = {}
-            for row_formator in row_formatting:
-                label_settings += row_formator(value)
 
-            TKDesigner.add_to_grid(label_method(value, container=container, bg=bg, **label_settings), row, i)
+            TKDesigner.add_to_grid(label_method(value, container=container, **label_settings), row, i)
 
     def create_row_from_list(self, row_list, container, row, bg, label_method=None, **column_formatting):
         """
@@ -419,14 +421,17 @@ class TKDesigner(Tk):
         frame.pack(settings)
 
     def create_temporary_popup(self, message, window_name='Notice', time_to_close=1):
-        def test():
-            print('destroy')
-            popup.destroy()
-
         popup = Toplevel(bg=self._background)
         popup.title(window_name)
 
         self.create_label(text=message, container=popup).pack(fill=X, padx=30, pady=5)
         self.centre_window(popup, centre_on=self)
-        self.after(time_to_close * 1000, test)
+        self.after(time_to_close * 1000, popup.destroy)
+
+    def create_centred_popup(self, message, window_name='Notice', centre_on=None):
+        popup = Toplevel(bg=self._background)
+        popup.title(window_name)
+
+        self.create_label(text=message, container=popup).pack(fill=X, padx=30, pady=5)
+        self.centre_window(popup, centre_on=self if centre_on is None else centre_on)
 
