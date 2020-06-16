@@ -241,12 +241,12 @@ class TKDesigner(Tk):
         settings.setdefault('font', self._label_font)
         return settings
 
-    def set_current_size_as_min(self):
+    def set_current_size_as_min(self, minwidth=200, minheight=20):
         self.update()
-        self.minsize(self.winfo_width(), self.winfo_height())
+        self.minsize(max(self.winfo_width(), minwidth), max(self.winfo_height(), minheight))
 
     def create_row_from_dict(self, dictionary, container, row, bg, label_method=None,
-                             column_formatting=None, row_formatting=None):
+                             column_formatting=None, row_formatting=None, whitelisted_headers=None):
         """
         Creates a row from a dictionary
         :param dictionary: The dictionary from which to create the row
@@ -256,6 +256,7 @@ class TKDesigner(Tk):
         :param label_method: The method used to create the label
         :param column_formatting: A dictionary containing methods which return a formatted value
         :param row_formatting: A list containing methods which will output label formatting
+        :param whitelisted_headers: If entered, only use headers in this list
         """
         label_method = self.create_label if label_method is None else label_method
         if column_formatting is None: column_formatting = {}
@@ -269,6 +270,10 @@ class TKDesigner(Tk):
         headers = list(dictionary.keys())
         for i in range(len(headers)):
             header = headers[i]
+
+            if whitelisted_headers is not None and header not in whitelisted_headers:
+                continue
+
             value = dictionary[header]
             if header in column_formatting:
                 value = column_formatting[header](value)
@@ -277,7 +282,8 @@ class TKDesigner(Tk):
 
             TKDesigner.add_to_grid(label_method(value, container=container, **label_settings), row, i)
 
-    def create_row_from_list(self, row_list, container, row, bg, label_method=None, **column_formatting):
+    def create_row_from_list(self, row_list, container, row, bg, label_method=None,
+                             whitelisted_values=None, **column_formatting):
         """
         Creates a row from a list
         :param row_list: The list from which to create the row
@@ -285,6 +291,7 @@ class TKDesigner(Tk):
         :param row: The current row of the grid
         :param bg: The background colour of the row
         :param label_method: The method used to create the label
+        :param whitelisted_values: If entered, only use values in this list
         :param column_formatting: A dictionary containing methods which return formatted values
                                   which are matched by a key, which corresponds to the list index.
         """
@@ -292,6 +299,9 @@ class TKDesigner(Tk):
 
         for i in range(len(row_list)):
             value = row_list[i]
+            if whitelisted_values is not None and value not in whitelisted_values:
+                continue
+
             if str(i) in column_formatting:
                 value = column_formatting[str(i)](value)
             elif 'default' in column_formatting:
@@ -300,7 +310,7 @@ class TKDesigner(Tk):
             TKDesigner.add_to_grid(label_method(value, container=container, bg=bg), row, i)
 
     def grid_from_list_of_dict(self, dictionary_list, container=None, bg1=None, bg2=pale_blue,
-                               column_formatting=None, row_formatting=None):
+                               column_formatting=None, row_formatting=None, whitelisted_headers=None):
         """
         Makes a grid from a list of dictionaries
         :param dictionary_list: The list of dictionaries from which to create the grid
@@ -309,6 +319,7 @@ class TKDesigner(Tk):
         :param bg2: Alternate row colour 2
         :param column_formatting: A dictionary containing methods which return formatted values
         :param row_formatting: A list containing methods which will output label formatting
+        :param whitelisted_headers: If entered, only use headers in this list
         :return: Frame containing the grid
         """
 
@@ -319,15 +330,16 @@ class TKDesigner(Tk):
         headers = list(dictionary_list[0].keys())
         row = 0
 
-        self.create_row_from_list(headers, container=frame, row=row, bg=bg1,
-                                  label_method=self.create_header, default=lambda x: x.capitalize())
-        self.set_column_weights(len(headers), container=frame)
+        self.create_row_from_list(headers, container=frame, row=row, bg=bg1, label_method=self.create_header,
+                                  whitelisted_values=whitelisted_headers, default=lambda x: x.capitalize())
+        self.set_column_weights(len([h for h in headers if whitelisted_headers is None or h in whitelisted_headers]),
+                                container=frame)
 
         for dictionary in dictionary_list:
             row += 1
             bg = bg1 if row % 2 == 0 else bg2
-            self.create_row_from_dict(dictionary, container=frame, row=row, bg=bg,
-                                      column_formatting=column_formatting, row_formatting=row_formatting)
+            self.create_row_from_dict(dictionary, container=frame, row=row, bg=bg, column_formatting=column_formatting,
+                                      row_formatting=row_formatting, whitelisted_headers=whitelisted_headers)
         return frame
 
     def grid_from_list(self, grid_list, item_to_list_converter, headers=None, container=None,

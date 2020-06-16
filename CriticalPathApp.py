@@ -77,28 +77,27 @@ class CriticalPathApp(TKDesigner):
         def on_parse_data():
             def validate_data():
                 def check_headers():
-                    input_headers = list(self._data[0].keys())
-                    if len(input_headers) != len(self._data_headers):
-                        return f"There doesn't seem to be the correct number of columns. Make sure \
-                               you have the following columns: {', '.join(self._data_headers)}."
+                    input_headers = [h.upper() for h in self._data[0].keys()]
+                    if len(input_headers) < len(self._data_headers):
+                        return f"There doesn't seem to be the correct number of columns. Make sure \n" +\
+                               f"you have the following columns: " \
+                               f"{', '.join([h.capitalize() for h in self._data_headers])}."
                     else:
                         for h in self._data_headers:
-                            if h not in input_headers:
-                                return f'You seem to be missing the column: {h}.'
-                            if input_headers.count(h) > 1:
-                                return f'You seem to have the column, {h}, {input_headers.count(h)} times.'
+                            if h.upper() not in input_headers:
+                                return f'You seem to be missing the column: {h.capitalize()}.'
                     return True
 
                 def check_data():
                     tasks = []
                     for row in self._data:
                         dependencies = parse_dependencies(row['dependencies'])
+                        if row['name'].upper() in tasks:
+                            return f'The task {row["name"]}, has been specified twice. This is not allowed.', \
+                                   row['name']
+
                         if row['name'].upper() in dependencies:
                             return f'The task {row["name"]}, cannot be dependent on itself.', row['name']
-
-                        if row['name'].upper() in tasks:
-                            return f'The task {row["name"]}, has been specified twice. This is not allowed.',\
-                                   row['name']
 
                         tasks.append(row['name'].upper())
                         if not all([d in tasks for d in dependencies]):
@@ -107,25 +106,24 @@ class CriticalPathApp(TKDesigner):
                         try:
                             float(row['time'])
                         except ValueError:
-                            return f"The time for the task {row['name']}, doesn't seem to be a number.", row['name']
+                            return f"The time for the task {row['name']} doesn't seem to be a number.", row['name']
 
                     return True
 
                 headers_result = check_headers()
-                data_result = check_data()
-                print(f'{headers_result is True}, {data_result is True}')
-                print(all([headers_result, data_result]))
-                if not all([headers_result is True, data_result is True]):
+                if headers_result is not True:
                     self.clear_ui()
-                    if headers_result is not True:
-                        self.display_errored_input_data_ui(headers_result)
-                    else:
-                        self.display_errored_input_data_ui(data_result[0], data_result[1])
+                    self.display_errored_input_data_ui(headers_result)
                     return False
+                else:
+                    data_result = check_data()
+                    if data_result is not True:
+                        self.clear_ui()
+                        self.display_errored_input_data_ui(data_result[0], data_result[1])
+                        return False
                 return True
 
             # TODO: Check the input data validation
-            # TODO: Maybe not make it instantly take you back, but just prevent you parsing the data.
             if not validate_data(): return
 
             solve_data(self._data)
@@ -143,7 +141,8 @@ class CriticalPathApp(TKDesigner):
             self._data,
             column_formatting=self.settings(
                 name=lambda n: n.capitalize(),
-                dependencies=lambda x: ', '.join(d.upper() for d in x.split(',')))
+                dependencies=lambda x: ', '.join(d.upper() for d in x.split(','))),
+            whitelisted_headers=self._data_headers
         ).pack(fill=BOTH)
 
         self.create_button('Parse Data', command=on_parse_data, padding=5).pack(fill=X)
@@ -169,10 +168,12 @@ class CriticalPathApp(TKDesigner):
             column_formatting=self.settings(
                 name=lambda n: n.capitalize(),
                 dependencies=lambda x: ', '.join(d.upper() for d in x.split(','))),
-            row_formatting=[errored_task_formatting] if errored_node is not None else []
+            row_formatting=[errored_task_formatting] if errored_node is not None else [],
+            whitelisted_headers=self._data_headers
         ).pack(fill=BOTH)
         self.create_button('Go Back', command=on_go_back, padding=5).pack(fill=X)
         self.create_centred_popup(error_message)
+        self.set_current_size_as_min()
 
     def display_output_data_ui(self):
         def on_save_data_to_clipboard():

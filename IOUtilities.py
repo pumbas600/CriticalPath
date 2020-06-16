@@ -9,10 +9,11 @@ class Errors(Enum):
     FILE_MADE = "The file, {}, didn't exist and so it has been created."
     FILE_CURRENTLY_OPEN = 'The file, {}, cannot be accessed because it is currently open.'
     CLIPBOARD_EMPTY = 'Your clipboard is currently empty.'
+    DUPLICATE_HEADER = 'A header exists multiple times - This is not allowed.'
 
     @staticmethod
     def is_error(error):
-        return error is Errors and error != Errors.SUCCESS
+        return type(error) is Errors and error != Errors.SUCCESS
 
 class IOUtilities:
 
@@ -40,6 +41,9 @@ class IOUtilities:
             headers = rows[0].split('\t')
             if lower_headers:
                 headers = [h.lower() for h in headers]
+            for header in headers:
+                if headers.count(header) > 1:
+                    return Errors.DUPLICATE_HEADER
 
             dictionary_list = []
             for row in rows[1:-1]:
@@ -66,6 +70,11 @@ class IOUtilities:
             reader = csv.DictReader(csvfile)
             if lower_headers:
                 reader.fieldnames = [h.lower().strip() for h in reader.fieldnames]
+
+            headers = reader.fieldnames
+            for header in headers:
+                if headers.count(header) > 1:
+                    return Errors.DUPLICATE_HEADER
             return list(reader)
 
     @staticmethod
